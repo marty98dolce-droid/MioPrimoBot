@@ -23,7 +23,7 @@ def send_telegram_message(message):
     try:
         requests.post(url, json=payload)
     except Exception as e:
-        print(f5f5f5, f"Errore invio Telegram: {e}")
+        print(f"Errore invio Telegram: {e}")
 
 def get_market_data():
     url = f"https://api.coingecko.com/api/v3/coins/{ASSET}/market_chart?vs_currency=eur&days=30"
@@ -50,7 +50,11 @@ def run_strategy():
 
     current_price = prices[-1]
     fast_ma = calculate_moving_average(prices, FAST_PERIOD)
-    slow_ma = calculate_moving_average(prices, SLOW_PERIOD] if 'SLOW_PERIOD' in globals() else calculate_moving_average(prices, SLOW_PERIOD)
+    slow_ma = calculate_moving_average(prices, SLOW_PERIOD)
+
+    if fast_ma is None or slow_ma is None:
+        print("Dati insufficienti per il calcolo delle medie.")
+        return
 
     # Messaggio da inviare
     if fast_ma > slow_ma:
