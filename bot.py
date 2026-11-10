@@ -1,7 +1,6 @@
 import os
 import requests
 
-# Leggiamo i dati protetti da GitHub Secrets
 TOKEN = os.environ.get('TELEGRAM_BOT_TOKEN')
 CHAT_ID = os.environ.get('TELEGRAM_CHAT_ID')
 
@@ -10,10 +9,10 @@ FAST_PERIOD = 20
 SLOW_PERIOD = 50
 
 def send_telegram_message(message):
-    """Invia la notifica sul tuo Telegram"""
     if not TOKEN or not CHAT_ID:
-        print("Token o Chat ID di Telegram non configurati.")
+        print("ATTENZIONE: Manca TELEGRAM_BOT_TOKEN o TELEGRAM_CHAT_ID nei Secrets di GitHub!")
         return
+    
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     payload = {
         "chat_id": CHAT_ID,
@@ -21,17 +20,18 @@ def send_telegram_message(message):
         "parse_mode": "Markdown"
     }
     try:
-        requests.post(url, json=payload)
+        response = requests.post(url, json=payload)
+        print(f"Risposta server Telegram: {response.status_code}")
+        print(f"Dettaglio risposta: {response.text}")
     except Exception as e:
-        print(f"Errore invio Telegram: {e}")
+        print(f"Errore critico invio Telegram: {e}")
 
 def get_market_data():
     url = f"https://api.coingecko.com/api/v3/coins/{ASSET}/market_chart?vs_currency=eur&days=30"
     try:
         response = requests.get(url)
         data = response.json()
-        prices = [p[1] for p in data['prices']]
-        return prices
+        return [p[1] for p in data['prices']]
     except Exception as e:
         print(f"Errore nel recupero dati: {e}")
         return []
@@ -44,7 +44,6 @@ def calculate_moving_average(prices, period):
 def run_strategy():
     print("--- AVVIO ANALISI BOT TRADING ---")
     prices = get_market_data()
-    
     if not prices:
         return
 
@@ -52,11 +51,6 @@ def run_strategy():
     fast_ma = calculate_moving_average(prices, FAST_PERIOD)
     slow_ma = calculate_moving_average(prices, SLOW_PERIOD)
 
-    if fast_ma is None or slow_ma is None:
-        print("Dati insufficienti per il calcolo delle medie.")
-        return
-
-    # Messaggio da inviare
     if fast_ma > slow_ma:
         msg = f"🚀 *SEGNALE TRADING: BULLISH*\n\nAsset: {ASSET.upper()}\nPrezzo: €{current_price:.2f}\nMedia Veloce: €{fast_ma:.2f}\nMedia Lenta: €{slow_ma:.2f}\n*Stato:* Trend Rialzista 📈"
     else:
